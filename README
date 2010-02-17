@@ -2,4 +2,8 @@
 
 This is a Python plug-in for the GIMP that will extract images and text out of a .psd file (or other layered formats) and create an .html template from it. I don't think this plugin will ever fully replace a human coder, but it should be able to do 50-90% of the work.
 
+== Development Resources ==
 
+There's a really good GIMP Python Plug-in development introduction here: http://www.gimp.org/docs/python/index.html
+
+Also, you can open up GIMP and go to Filters>Python-Fu>Console to open up a Python console within GIMP. In the GUI that pops up there's a Browse button you can click that gives you a list of installed plug-ins and library items.
