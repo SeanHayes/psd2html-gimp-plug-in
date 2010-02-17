@@ -1,0 +1,5 @@
+= psd2html GIMP Plug-in =
+
+This is a Python plug-in for the GIMP that will extract images and text out of a .psd file (or other layered formats) and create an .html template from it. I don't think this plugin will ever fully replace a human coder, but it should be able to do 50-90% of the work.
+
+
