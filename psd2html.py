@@ -6,6 +6,9 @@ import os
 gettext.install("gimp20-python", gimp.locale_directory, unicode=True)
 
 def plugin_func(image, drawable, opaque_image_format, transparent_image_format, translucent_image_format):
+	"""
+	This is the function that does most of the work. See register() below for more info.
+	"""
 	#get name of file
 	filename = os.path.splitext(image.filename)[0]
 	#create filename.html and filename_files/ folder
