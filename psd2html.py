@@ -18,6 +18,7 @@
 
 from gimpfu import *
 import os
+import re
 
 gettext.install("gimp20-python", gimp.locale_directory, unicode=True)
 
@@ -37,42 +38,45 @@ def plugin_func(image, drawable, opaque_image_format, transparent_image_format, 
 	/home/user/dev/template_files/<layer_name_1>.(gif|jpg|png)
 	/home/user/dev/template_files/<layer_name_n...>.(gif|jpg|png)
 	
-	When testing in the console, call this function with: plugin_func(gimp.image_list()[0], gimp.image_list()[0], 'png', 'png', 'png')
+	When testing in the console, call this function with:
+	plugin_func(gimp.image_list()[0], gimp.image_list()[0], 'png', 'png', 'png')
 	"""
 	#get name of file
 	filename = os.path.splitext(image.filename)[0]
 	directory = os.path.dirname(image.filename)
 	#TODO: clean up existing files and folders in case this plugin has already been run (accept overwrite parameter from user, or fail)
 	#create filename.html and filename_files/ folder
-	html_file = os.open(os.path.join(directory, filename+os.path.extsep+'html'), os.O_RDWR+os.O_CREAT)
+	html_file_path = os.path.join(directory, filename+os.path.extsep+'html')
+	html_file = os.open(html_file_path, os.O_RDWR+os.O_CREAT)
 	media_dir = filename+'_files'
 	os.mkdir(media_dir)
-	css_file = os.open(os.path.join(directory, media_dir, 'style'+os.path.extsep+'css'), os.O_RDWR+os.O_CREAT)
+	css_file_path = os.path.join(directory, media_dir, 'style'+os.path.extsep+'css')
+	css_file = os.open(css_file_path, os.O_RDWR+os.O_CREAT)
 	
-	#TODO: needs a clearing stylesheet
-	html = """
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
-<head>
-	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-	<meta name="generator" content="psd2html GIMP Plug-in" />
-</head>
-<body>
-	"""
+	inner_html = ""
 	css = ""
-	#iterate through layers, in order
-	for layer in image.layers:
-		#TODO: Escape me!
-		element_id = layer.name
-		#for debugging
-		print element_id
+	
+	disallowed_chars = re.compile(r'[^\w-]+')
+	leading_nonletters = re.compile(r'^([^a-z]+)(.*)')
+	#iterate through layers, bottom first (image.layers is ordered top first, bottom last)
+	for layer in reversed(image.layers):
+		name = layer.name
+		#replace disallowed characters with an underscore
+		element_id = disallowed_chars.sub('_', name.lower())
+		#remove leading non-letters
+		element_id = leading_nonletters.sub(r'\2_\1', element_id)
+		#remove leading and trailing underscores
+		element_id = element_id.strip('_')
 		x, y = layer.offsets
 		width = layer.width
 		height = layer.height
+		#for debugging
+		print element_id
 		image_ext = 'png'
 		image_file = os.path.join(directory, media_dir, element_id+os.path.extsep+image_ext)
-		html += "<div id=\"%s\"></div>\n" % element_id
+		#the path relative from the css file
+		image_rel_path = os.path.relpath(image_file, os.path.dirname(css_file_path))
+		inner_html += "\t<div id=\"%s\"></div>\n" % element_id
 		#only absolute positioning supported, at least for now
 		css += """#%s
 {
@@ -84,21 +88,28 @@ def plugin_func(image, drawable, opaque_image_format, transparent_image_format, 
 	height: %dpx;
 }
 
-""" % (element_id, image_file, x, y, width, height)
+""" % (element_id, image_rel_path, x, y, width, height)
 		#if layer is an image extract it to filename_files/ and create <div> element with a background-image set
 		#to do later: if layer is text, create a text node
-	
-	html += """
-</body>
+	#TODO: needs a clearing stylesheet
+	html = """<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<meta name="generator" content="psd2html GIMP Plug-in" />
+</head>
+<body>
+%s</body>
 </html>
-	"""
+""" % inner_html
 	
 	os.write(html_file, html)
 	os.close(html_file)
 	os.write(css_file, css)
 	os.close(css_file)
 	#to do later: arrange nodes into a heirarchy based on size and position. Elements that fit within another element should be a child node.
-	#to do later: detect if multiple layers have the same size and position and treat them like buttons
+	#to do later: detect if multiple layers have the same size and position and treat them like buttons. Option to extract as css sprites.
 	#to do later: use an XML library to construct .html file. Use an XHTML 1.0 Strict doctype and validate the markup.
 	#to do later: add the following optional tests: 
 	#				Validate XHTML, CSS, JS
