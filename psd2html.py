@@ -23,7 +23,7 @@ import re
 
 gettext.install("gimp20-python", gimp.locale_directory, unicode=True)
 
-def plugin_func(image, drawable):
+def plugin_func(image, drawable, css_opacity):
 	"""
 	This is the function that does most of the work. See register() below for more info.
 	
@@ -40,7 +40,7 @@ def plugin_func(image, drawable):
 	/home/user/dev/template_files/<layer_name_n...>.(gif|jpg|png)
 	
 	When testing in the console, call this function with:
-	plugin_func(gimp.image_list()[0], gimp.image_list()[0])
+	plugin_func(gimp.image_list()[0], gimp.image_list()[0], True)
 	"""
 	global progress
 	#step used for progress bar. 1 for html file, 1 for css file, 3 for each layer
@@ -71,6 +71,7 @@ def plugin_func(image, drawable):
 	leading_nonletters = re.compile(r'^([^a-z]+)(.*)')
 	#iterate through layers, bottom first (image.layers is ordered top first, bottom last)
 	for layer in reversed(image.layers):
+		#TODO: only export visible layers
 		name = layer.name
 		gimp.progress_init('psd2html: Inspecting %s' % name)
 		#replace disallowed characters with an underscore
@@ -83,6 +84,12 @@ def plugin_func(image, drawable):
 		x, y = layer.offsets
 		width = layer.width
 		height = layer.height
+		opacity = layer.opacity
+		opacity_string = ""
+		if css_opacity:
+			opacity_string = """
+	opacity: %.1f;
+	filter: alpha(opacity=%i);""" % (opacity/100.0, opacity)
 		#for debugging
 		print element_id
 		image_ext = 'png'
@@ -98,10 +105,10 @@ def plugin_func(image, drawable):
 	top: %dpx;
 	left: %dpx;
 	width: %dpx;
-	height: %dpx;
+	height: %dpx;%s
 }
 
-""" % (element_id, image_rel_path, y, x, width, height)
+""" % (element_id, image_rel_path, y, x, width, height, opacity_string)
 		
 		#if layer is an image extract it to filename_files/ and create <div> element with a background-image set
 		
@@ -156,6 +163,7 @@ register(
 	[
 		(PF_IMAGE, "image", "Input image", None),
 		(PF_DRAWABLE, "drawable", "Input drawable", None),
+		(PF_TOGGLE, "css-opacity", "Whether to use CSS to specify opacity (1, True) or save it in the image file (0, False).", None),
 		#TODO: add option for interactive file saving, and another for css defined opacity
 		#to do later: add options for manually choosing CSS and JS to use, could be useful for compatibility with CSS and JS frameworks
 	],
