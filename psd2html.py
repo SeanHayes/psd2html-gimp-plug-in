@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 #	psd2html - Converts a .psd file (or other layered image) to an .html template.
 #	Copyright © 2010 Seán Hayes
@@ -22,7 +23,7 @@ import re
 
 gettext.install("gimp20-python", gimp.locale_directory, unicode=True)
 
-def plugin_func(image, drawable, opaque_image_format, transparent_image_format, translucent_image_format):
+def plugin_func(image, drawable):
 	"""
 	This is the function that does most of the work. See register() below for more info.
 	
@@ -39,7 +40,7 @@ def plugin_func(image, drawable, opaque_image_format, transparent_image_format, 
 	/home/user/dev/template_files/<layer_name_n...>.(gif|jpg|png)
 	
 	When testing in the console, call this function with:
-	plugin_func(gimp.image_list()[0], gimp.image_list()[0], 'png', 'png', 'png')
+	plugin_func(gimp.image_list()[0], gimp.image_list()[0])
 	"""
 	global progress
 	#step used for progress bar. 1 for html file, 1 for css file, 3 for each layer
@@ -106,7 +107,7 @@ def plugin_func(image, drawable, opaque_image_format, transparent_image_format, 
 		
 		add_progress(1)
 		gimp.progress_init('psd2html: Saving %s' % image_path)
-		pdb.gimp_file_save(image, layer, image_path, image_path)
+		pdb.gimp_file_save(image, layer, image_path, image_path, run_mode=1)
 		add_progress(2)
 		#to do later: if layer is text, create a text node
 	
@@ -155,9 +156,7 @@ register(
 	[
 		(PF_IMAGE, "image", "Input image", None),
 		(PF_DRAWABLE, "drawable", "Input drawable", None),
-		(PF_RADIO, "opaque-image-format", _("Layers without transparency will be saved in this format."), "jpg", (("gif", "gif"), ("jpg", "jpg"), ("png", "png"))),
-		(PF_RADIO, "transparent-image-format", _("Layers with transparency will be saved in this format."), "png", (("gif", "gif"), ("png", "png"))),
-		(PF_RADIO, "translucent-image-format", _("Layers containing partial transparency will be saved in this format."), "png", (("png", "png"))),
+		#TODO: add option for interactive file saving, and another for css defined opacity
 		#to do later: add options for manually choosing CSS and JS to use, could be useful for compatibility with CSS and JS frameworks
 	],
 	[],
