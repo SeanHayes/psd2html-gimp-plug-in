@@ -64,7 +64,7 @@ def layers_to_dict(layers, layers_meta):
 	d = sort(d, l, layers_meta)
 	return (d, l)
 
-def get_html(parent_key, d, layers, layers_meta, css_opacity, depth=0):
+def get_html(parent_key, d, layers, layers_meta, layer_order, css_opacity, depth=0):
 	px = 0
 	py = 0
 	if parent_key is not None:
@@ -74,7 +74,7 @@ def get_html(parent_key, d, layers, layers_meta, css_opacity, depth=0):
 		print 'parent: %s, (x, y): %s' % (str(parent_key), str((px, py)))
 	style = []
 	html = []
-	for key in d:
+	for key in [layer for layer in layer_order if layer in d]:
 		val = d[key]
 		gimp.progress_init('psd2html: Inspecting %s' % layers[key].name)
 		if css_opacity:
@@ -86,7 +86,7 @@ def get_html(parent_key, d, layers, layers_meta, css_opacity, depth=0):
 		
 		if parent_key is None:
 			print 'child: %s, (x, y): %s' % (key, str((layers_meta[key]['x'], layers_meta[key]['y'])))
-		sub_s, sub_html = get_html(key, val, layers, layers_meta, css_opacity, depth=depth+1)
+		sub_s, sub_html = get_html(key, val, layers, layers_meta, layer_order, css_opacity, depth=depth+1)
 		#print 'sub_s: %s' % sub_s
 		#CSS for this layer
 		s = """#%s
@@ -158,7 +158,9 @@ def plugin_func(image, drawable, css_opacity):
 	disallowed_chars = re.compile(r'[^\w-]+')
 	leading_nonletters = re.compile(r'^([^a-z]+)(.*)')
 	layers_meta = {}
+	layer_order = []
 	for layer in reversed(image.layers):
+		layer_order.append(layer.name)
 		layers_meta[layer.name] = {}
 		layers_meta[layer.name]['x'], layers_meta[layer.name]['y'] = layer.offsets
 		layers_meta[layer.name]['x2'] = layers_meta[layer.name]['x'] + layer.width
@@ -186,7 +188,7 @@ def plugin_func(image, drawable, css_opacity):
 		#to do later: if layer is text, create a text node
 	
 	d, layers = layers_to_dict(reversed(image.layers), layers_meta)
-	css, inner_html = get_html(None, d, layers, layers_meta, css_opacity)
+	css, inner_html = get_html(None, d, layers, layers_meta, layer_order, css_opacity)
 	
 	html = """<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
