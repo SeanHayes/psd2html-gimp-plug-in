@@ -23,6 +23,69 @@ import re
 
 gettext.install("gimp20-python", gimp.locale_directory, unicode=True)
 
+justifications = ('left', 'right', 'center', 'justify')
+
+opacity_template = """
+	opacity: %.1f;
+	filter: alpha(opacity=%i);"""
+
+css_image_template = """#%(id)s
+{
+	background-image: url("%(url)s");
+	position: absolute;
+	top: %(top)dpx;
+	left: %(left)dpx;
+	width: %(width)dpx;
+	height: %(height)dpx;%(opacity_s)s
+}
+
+%(more_css)s"""
+
+css_text_template = """#%(id)s
+{
+	position: absolute;
+	top: %(top)dpx;
+	left: %(left)dpx;
+	width: %(width)dpx;
+	height: %(height)dpx;
+	font-size: %(font-size)s;%(opacity_s)s;
+	font-family: %(font-family)s;%(opacity_s)s;
+	color: %(color)s;
+	text-align: %(text-align)s;
+}
+
+%(more_css)s"""
+
+html_template = """%(indent)s<div id=\"%(id)s\">%(text)s
+%(inner_html)s
+%(indent)s</div>
+"""
+
+html_body_template = """<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<meta name="generator" content="psd2html GIMP Plug-in" />
+	<link href="%s" rel="stylesheet" type="text/css" />
+</head>
+<body>
+%s
+</body>
+</html>
+"""
+
+step_size = 1
+progress = 0
+def add_progress(steps):
+	global progress
+	progress += steps * step_size
+	gimp.progress_update(progress)
+
+def set_step_size(s):
+	global step_size
+	step_size = s
+
 def sort(d, layers, layers_meta):
 	#print 'dict: %s' % str(d)
 	for key in d.keys():
@@ -70,42 +133,56 @@ def get_html(parent_key, d, layers, layers_meta, layer_order, css_opacity, depth
 	if parent_key is not None:
 		px = layers_meta[parent_key]['x']
 		py = layers_meta[parent_key]['y']
-	else:
-		print 'parent: %s, (x, y): %s' % (str(parent_key), str((px, py)))
+	
 	style = []
 	html = []
 	for key in [layer for layer in layer_order if layer in d]:
 		val = d[key]
 		gimp.progress_init('psd2html: Inspecting %s' % layers[key].name)
-		if css_opacity:
-			opacity_string = """
-	opacity: %.1f;
-	filter: alpha(opacity=%i);""" % (layers[key].opacity/100.0, layers[key].opacity)
-		else:
-			opacity_string = ''
+		opacity_string = ''
+		if css_opacity and layers[key].opacity is not 1:
+			opacity_string = opacity_template % (layers[key].opacity/100.0, layers[key].opacity)
 		
-		if parent_key is None:
-			print 'child: %s, (x, y): %s' % (key, str((layers_meta[key]['x'], layers_meta[key]['y'])))
 		sub_s, sub_html = get_html(key, val, layers, layers_meta, layer_order, css_opacity, depth=depth+1)
-		#print 'sub_s: %s' % sub_s
+		
+		vals = {
+			'id': layers_meta[key]['id'],
+			'url': '',
+			'top': layers_meta[key]['y']-py,
+			'left': layers_meta[key]['x']-px,
+			'width': layers[key].width,
+			'height': layers[key].height,
+			'opacity_s': opacity_string,
+			'more_css': sub_s,
+			'inner_html': sub_html,
+			'indent': '\t'*depth,
+			'text': '',
+			'font-size': '',
+			'font-family': '',
+			'color': '',
+			'text-align': '',
+		}
+		
+		if pdb.gimp_drawable_is_text_layer(layers[key]):
+			vals['text'] = pdb.gimp_text_layer_get_text(layers[key])
+			size, units = pdb.gimp_text_layer_get_font_size(layers[key])
+			vals['font-size'] = '%s%s' % (size, pdb.gimp_unit_get_abbreviation(units))
+			vals['font-family'] = pdb.gimp_text_layer_get_font(layers[key])
+			color = list(pdb.gimp_text_layer_get_color(layers[key]))
+			for i, c in enumerate(color):
+				color[i] = hex(color[i])[2:]
+			vals['color'] = '#%s%s%s' % tuple(color[0:3])
+			vals['text-align'] = justifications[pdb.gimp_text_layer_get_justification(layers[key])]
+			#TODO: add text-indent, line-height, and letter-spacing
+			s = css_text_template
+		else:
+			vals['url'] = layers_meta[key]['image_rel_path']
+			s = css_image_template
+		
 		#CSS for this layer
-		s = """#%s
-{
-	background-image: url("%s");
-	position: absolute;
-	top: %dpx;
-	left: %dpx;
-	width: %dpx;
-	height: %dpx;%s
-}
-
-%s""" % (layers_meta[key]['id'], layers_meta[key]['image_rel_path'], layers_meta[key]['y']-py, layers_meta[key]['x']-px, layers[key].width, layers[key].height, opacity_string, sub_s)
+		s = s % vals
 		#html for this layer
-		indent = '\t'*depth
-		h = """%s<div id=\"%s\">
-%s
-%s</div>
-""" % (indent, layers_meta[key]['id'], sub_html, indent)
+		h = html_template % vals
 		style.append(s)
 		html.append(h)
 		
@@ -113,6 +190,7 @@ def get_html(parent_key, d, layers, layers_meta, layer_order, css_opacity, depth
 	html = ''.join(html)
 	return (style, html)
 
+#FIXME: remove CSS opacity, since it's inherited by child elements in HTML+CSS
 def plugin_func(image, drawable, css_opacity):
 	"""
 	This is the function that does most of the work. See register() below for more info.
@@ -132,14 +210,9 @@ def plugin_func(image, drawable, css_opacity):
 	When testing in the console, call this function with:
 	plugin_func(gimp.image_list()[0], gimp.image_list()[0], True)
 	"""
-	global progress
 	#step used for progress bar. 1 for html file, 1 for css file, 3 for each layer
-	step_size = 1 / (2 + 3 * len(image.layers))
-	progress = 0
-	def add_progress(steps):
-		global progress
-		progress += steps * step_size
-		gimp.progress_update(progress)
+	set_step_size(1 / (2 + 3 * len(image.layers)))
+	
 	gimp.progress_init('psd2html: Running')
 	add_progress(0)
 	#get name of file
@@ -161,6 +234,7 @@ def plugin_func(image, drawable, css_opacity):
 	layer_order = []
 	for layer in reversed(image.layers):
 		layer_order.append(layer.name)
+		#maybe parasites could be used instead, but I can't find any documentation on what the flags are
 		layers_meta[layer.name] = {}
 		layers_meta[layer.name]['x'], layers_meta[layer.name]['y'] = layer.offsets
 		layers_meta[layer.name]['x2'] = layers_meta[layer.name]['x'] + layer.width
@@ -173,6 +247,9 @@ def plugin_func(image, drawable, css_opacity):
 		layers_meta[layer.name]['id'] = leading_nonletters.sub(r'\2_\1', layers_meta[layer.name]['id'])
 		#remove leading and trailing underscores
 		layers_meta[layer.name]['id'] = layers_meta[layer.name]['id'].strip('_')
+		
+		if layers_meta[layer.name]['id'] is '':
+			layers_meta[layer.name]['id'] = str(layer.ID)
 		
 		#for debugging
 		print layers_meta[layer.name]['id']
@@ -190,19 +267,7 @@ def plugin_func(image, drawable, css_opacity):
 	d, layers = layers_to_dict(reversed(image.layers), layers_meta)
 	css, inner_html = get_html(None, d, layers, layers_meta, layer_order, css_opacity)
 	
-	html = """<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
-<head>
-	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-	<meta name="generator" content="psd2html GIMP Plug-in" />
-	<link href="%s" rel="stylesheet" type="text/css" />
-</head>
-<body>
-%s
-</body>
-</html>
-""" % (os.path.relpath(css_file_path, os.path.dirname(html_file_path)), inner_html)
+	html = html_body_template % (os.path.relpath(css_file_path, os.path.dirname(html_file_path)), inner_html)
 	
 	gimp.progress_init('psd2html: Saving %s' % html_file_path)
 	os.write(html_file, html)
