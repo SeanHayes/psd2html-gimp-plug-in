@@ -36,7 +36,8 @@ css_image_template = """#%(id)s
 	top: %(top)dpx;
 	left: %(left)dpx;
 	width: %(width)dpx;
-	height: %(height)dpx;%(opacity_s)s
+	height: %(height)dpx;
+	z-index: %(z-index)d;%(opacity_s)s;
 }
 
 %(more_css)s"""
@@ -48,10 +49,14 @@ css_text_template = """#%(id)s
 	left: %(left)dpx;
 	width: %(width)dpx;
 	height: %(height)dpx;
-	font-size: %(font-size)s;%(opacity_s)s;
-	font-family: %(font-family)s;%(opacity_s)s;
+	font-size: %(font-size)s;
+	font-family: %(font-family)s;
 	color: %(color)s;
 	text-align: %(text-align)s;
+	text-indent: %(text-indent)s;
+	line-height: %(line-height)s;
+	letter-spacing: %(letter-spacing)s;
+	z-index: %(z-index)d;%(opacity_s)s
 }
 
 %(more_css)s"""
@@ -147,7 +152,6 @@ def get_html(parent_key, d, layers, layers_meta, layer_order, css_opacity, depth
 		
 		vals = {
 			'id': layers_meta[key]['id'],
-			'url': '',
 			'top': layers_meta[key]['y']-py,
 			'left': layers_meta[key]['x']-px,
 			'width': layers[key].width,
@@ -157,10 +161,7 @@ def get_html(parent_key, d, layers, layers_meta, layer_order, css_opacity, depth
 			'inner_html': sub_html,
 			'indent': '\t'*depth,
 			'text': '',
-			'font-size': '',
-			'font-family': '',
-			'color': '',
-			'text-align': '',
+			'z-index': layers_meta[key]['z-index'],
 		}
 		
 		if pdb.gimp_drawable_is_text_layer(layers[key]):
@@ -174,6 +175,9 @@ def get_html(parent_key, d, layers, layers_meta, layer_order, css_opacity, depth
 			vals['color'] = '#%s%s%s' % tuple(color[0:3])
 			vals['text-align'] = justifications[pdb.gimp_text_layer_get_justification(layers[key])]
 			#TODO: add text-indent, line-height, and letter-spacing
+			vals['text-indent'] = '%dpx' % pdb.gimp_text_layer_get_indent(layers[key])
+			vals['line-height'] = '%dpx' % pdb.gimp_text_layer_get_line_spacing(layers[key])
+			vals['letter-spacing'] = '%dpx' % pdb.gimp_text_layer_get_letter_spacing(layers[key])
 			s = css_text_template
 		else:
 			vals['url'] = layers_meta[key]['image_rel_path']
@@ -247,6 +251,7 @@ def plugin_func(image, drawable, css_opacity):
 		layers_meta[layer.name]['id'] = leading_nonletters.sub(r'\2_\1', layers_meta[layer.name]['id'])
 		#remove leading and trailing underscores
 		layers_meta[layer.name]['id'] = layers_meta[layer.name]['id'].strip('_')
+		layers_meta[layer.name]['z-index'] = layer.ID
 		
 		if layers_meta[layer.name]['id'] is '':
 			layers_meta[layer.name]['id'] = str(layer.ID)
