@@ -299,11 +299,11 @@ register(
 	"Seán Hayes",
 	"2010",
 	N_("_Convert to HTML..."),
-	"",
+	"*",
 	[
 		(PF_IMAGE, "image", "Input image", None),
 		(PF_DRAWABLE, "drawable", "Input drawable", None),
-		(PF_TOGGLE, "css-opacity", "Whether to use CSS to specify opacity (1, True) or save it in the image file (0, False).", None),
+		(PF_TOGGLE, "css-opacity", "Whether to use CSS to specify opacity (1, True) or save it in the image file (0, False).", True),
 		#TODO: add option for interactive file saving, and another for css defined opacity
 		#to do later: add options for manually choosing CSS and JS to use, could be useful for compatibility with CSS and JS frameworks
 	],
