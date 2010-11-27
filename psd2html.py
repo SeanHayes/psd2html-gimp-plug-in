@@ -112,13 +112,15 @@ def sort(d, layers, layers_meta):
 	d_keys = d.keys()
 	d_keys.sort(key=sort_keys_func)
 	logger.debug(d_keys)
-	for key in d_keys:
+	for key in reversed(d_keys):
 		#verify this key still exists since the dict can be chaged within this loop
 		if not d.has_key(key):
 			continue
 		val = d[key]
 		#logger.debug('key: %s, val: %s' % (key, str(val)))
 		for key2 in d_keys:
+			if key == key2:
+				continue
 			if not d.has_key(key2):
 				continue
 			val2 = d[key2]
@@ -135,7 +137,7 @@ def sort(d, layers, layers_meta):
 				lmk = layers_meta[key]
 				lmk2 = layers_meta[key2]
 				#if key2 is within the bounds of key
-				if (lmk['x'] <= lmk2['x'] or lmk['x2'] >= lmk2['x2']) and (lmk['y'] <= lmk2['y'] or lmk['y2'] >= lmk2['y2']):
+				if (lmk['x'] <= lmk2['x'] and lmk['x2'] >= lmk2['x2']) and (lmk['y'] <= lmk2['y'] and lmk['y2'] >= lmk2['y2']):
 					#logger.debug('layer: %s, x: %d, y: %d, x2: %d, y2: %d' % (key, lmk['x'], lmk['y'], lmk['x2'], lmk['y2']))
 					#logger.debug('layer2: %s, x: %d, y: %d, x2: %d, y2: %d' % (key2, lmk2['x'], lmk2['y'], lmk2['x2'], lmk2['y2']))
 					d[key][key2] = d.pop(key2)
