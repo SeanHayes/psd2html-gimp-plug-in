@@ -68,10 +68,9 @@ css_text_template = """#%(id)s
 
 %(more_css)s"""
 
-html_template = """%(indent)s<div id=\"%(id)s\">%(text)s
-%(inner_html)s
-%(indent)s</div>
-"""
+html_template = """
+%(indent)s<div id=\"%(id)s\">%(text)s%(inner_html)s
+%(indent)s</div>"""
 
 html_body_template = """<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
@@ -81,8 +80,7 @@ html_body_template = """<?xml version="1.0" encoding="UTF-8"?>
 	<meta name="generator" content="psd2html GIMP Plug-in" />
 	<link href="%s" rel="stylesheet" type="text/css" />
 </head>
-<body>
-%s
+<body>%s
 </body>
 </html>
 """
@@ -105,8 +103,8 @@ def get_sort_keys_func(layers_meta):
 		return layers_meta[key]['z-index']
 	return sort_keys
 
-def sort(d, layers, layers_meta):
-	logger.debug('sort()')
+def nest_layers(d, layers, layers_meta):
+	logger.debug('nest_layers()')
 	logger.debug('dict: %s' % str(d))
 	sort_keys_func = get_sort_keys_func(layers_meta)
 	d_keys = d.keys()
@@ -144,7 +142,7 @@ def sort(d, layers, layers_meta):
 			#otherwise, key2 is a parent of key, in which case it'll be sorted in another iteration
 	
 	for key in d:
-		d[key] = sort(d[key], layers, layers_meta) if d[key] else {}
+		d[key] = nest_layers(d[key], layers, layers_meta) if d[key] else {}
 	return d
 
 def layers_to_dict(layers, layers_meta):
@@ -155,7 +153,7 @@ def layers_to_dict(layers, layers_meta):
 		logger.debug(layer.name)
 		d[layer.name] = {}
 		l[layer.name] = layer
-	d = sort(d, l, layers_meta)
+	d = nest_layers(d, l, layers_meta)
 	return (d, l)
 
 def get_html(parent_key, d, layers, layers_meta, layer_order, css_opacity, depth=0):
@@ -200,7 +198,6 @@ def get_html(parent_key, d, layers, layers_meta, layer_order, css_opacity, depth
 				color[i] = hex(color[i])[2:]
 			vals['color'] = '#%s%s%s' % tuple(color[0:3])
 			vals['text-align'] = justifications[pdb.gimp_text_layer_get_justification(layers[key])]
-			#TODO: add text-indent, line-height, and letter-spacing
 			vals['text-indent'] = '%dpx' % pdb.gimp_text_layer_get_indent(layers[key])
 			vals['line-height'] = '%dpx' % pdb.gimp_text_layer_get_line_spacing(layers[key])
 			vals['letter-spacing'] = '%dpx' % pdb.gimp_text_layer_get_letter_spacing(layers[key])
