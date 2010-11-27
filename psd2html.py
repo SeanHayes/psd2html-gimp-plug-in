@@ -20,8 +20,8 @@
 from gimpfu import *
 import os
 import re
-import logging
 import string
+import logging
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -90,8 +90,11 @@ html_body_close_template = """
 </html>
 """
 
+image_filename_template = '%s%spng'
+
 step_size = 1
 progress = 0
+
 def add_progress(steps):
 	global progress
 	progress += steps * step_size
@@ -103,8 +106,6 @@ def set_step_size(s):
 
 def get_sort_keys_func(layers_meta):
 	def sort_keys(key):
-		#logger.debug(key)
-		#logger.debug(layers_meta[key])
 		return layers_meta[key]['z-index']
 	return sort_keys
 
@@ -126,13 +127,11 @@ def nest_layers(d, layers, layers_meta):
 				continue
 			if not d.has_key(key2):
 				continue
-			val2 = d[key2]
 			
 			lk = layers[key]
 			lk2 = layers[key2]
-			#logger.debug(key+', '+key2)
-			#logger.debug(lk)
-			#if they're the same size, they can't be parents or siblings
+			
+			#if they're the same size, they can't be parents or children of each other
 			if lk.width == lk2.width and lk.height == lk2.height:
 				continue
 			#if key2 is smaller, it might be a child
@@ -186,8 +185,6 @@ def get_html(parent_key, d, layers, layers_meta, layer_order, css_opacity, depth
 			'width': layers[key].width,
 			'height': layers[key].height,
 			'opacity_s': opacity_string,
-			#'more_css': sub_s,
-			#'inner_html': sub_html,
 			'indent': '\t'*depth,
 			'text': '',
 			'z-index': layers_meta[key]['z-index'],
@@ -215,14 +212,12 @@ def get_html(parent_key, d, layers, layers_meta, layer_order, css_opacity, depth
 		style.append(s % vals)
 		#CSS for sub elements
 		style.extend(sub_s)
-		#html for this layer
+		#HTML for this layer
 		html.append(html_div_open_template % vals)
 		#HTML for sub elements
 		html.extend(sub_html)
 		html.append(html_div_close_template % vals)
-		
-	#style = ''.join(style)
-	#html = ''.join(html)
+	
 	return (style, html)
 
 #FIXME: remove CSS opacity, since it's inherited by child elements in HTML+CSS
@@ -291,17 +286,19 @@ def plugin_func(image, drawable, css_opacity, export_images=True):
 			layers_meta[layer.name]['id'] = str(layer.ID)
 		
 		#logger.debug(layers_meta[layer.name]['id'])
-		image_ext = 'png'
-		image_path = os.path.join(directory, media_dir, layers_meta[layer.name]['id']+os.path.extsep+image_ext)
-		#the path relative from the css file
-		layers_meta[layer.name]['image_rel_path'] = os.path.relpath(image_path, os.path.dirname(css_file_path))
-		#if layer is an image extract it to filename_files/
-		add_progress(1)
-		gimp.progress_init('psd2html: Saving %s' % image_path)
-		if export_images:
-			pdb.gimp_file_save(image, layer, image_path, image_path, run_mode=1)
-		add_progress(2)
-		#to do later: if layer is text, create a text node
+		
+		if not pdb.gimp_drawable_is_text_layer(layer):
+			image_path = os.path.join(directory, media_dir, image_filename_template % (layers_meta[layer.name]['id'], os.path.extsep))
+			#the path relative from the css file
+			layers_meta[layer.name]['image_rel_path'] = os.path.relpath(image_path, os.path.dirname(css_file_path))
+			#if layer is an image extract it to filename_files/
+			add_progress(1)
+			gimp.progress_init('psd2html: Saving %s' % image_path)
+			if export_images:
+				pdb.gimp_file_save(image, layer, image_path, image_path, run_mode=1)
+			add_progress(2)
+		else:
+			add_progress(3)
 	
 	d, layers = layers_to_dict(reversed(image.layers), layers_meta)
 	css, html = get_html(None, d, layers, layers_meta, layer_order, css_opacity)
