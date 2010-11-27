@@ -21,6 +21,7 @@ from gimpfu import *
 import os
 import re
 import logging
+import string
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -44,10 +45,10 @@ css_image_template = """#%(id)s
 	left: %(left)dpx;
 	width: %(width)dpx;
 	height: %(height)dpx;
-	z-index: %(z-index)d;%(opacity_s)s;
+	z-index: %(z-index)d;%(opacity_s)s
 }
 
-%(more_css)s"""
+"""
 
 css_text_template = """#%(id)s
 {
@@ -66,13 +67,15 @@ css_text_template = """#%(id)s
 	z-index: %(z-index)d;%(opacity_s)s
 }
 
-%(more_css)s"""
+"""
 
-html_template = """
-%(indent)s<div id=\"%(id)s\">%(text)s%(inner_html)s
+html_div_open_template = """
+%(indent)s<div id=\"%(id)s\">%(text)s"""
+
+html_div_close_template = """
 %(indent)s</div>"""
 
-html_body_template = """<?xml version="1.0" encoding="UTF-8"?>
+html_body_open_template = """<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
@@ -80,7 +83,9 @@ html_body_template = """<?xml version="1.0" encoding="UTF-8"?>
 	<meta name="generator" content="psd2html GIMP Plug-in" />
 	<link href="%s" rel="stylesheet" type="text/css" />
 </head>
-<body>%s
+<body>"""
+
+html_body_close_template = """
 </body>
 </html>
 """
@@ -181,8 +186,8 @@ def get_html(parent_key, d, layers, layers_meta, layer_order, css_opacity, depth
 			'width': layers[key].width,
 			'height': layers[key].height,
 			'opacity_s': opacity_string,
-			'more_css': sub_s,
-			'inner_html': sub_html,
+			#'more_css': sub_s,
+			#'inner_html': sub_html,
 			'indent': '\t'*depth,
 			'text': '',
 			'z-index': layers_meta[key]['z-index'],
@@ -207,14 +212,17 @@ def get_html(parent_key, d, layers, layers_meta, layer_order, css_opacity, depth
 			s = css_image_template
 		
 		#CSS for this layer
-		s = s % vals
+		style.append(s % vals)
+		#CSS for sub elements
+		style.extend(sub_s)
 		#html for this layer
-		h = html_template % vals
-		style.append(s)
-		html.append(h)
+		html.append(html_div_open_template % vals)
+		#HTML for sub elements
+		html.extend(sub_html)
+		html.append(html_div_close_template % vals)
 		
-	style = ''.join(style)
-	html = ''.join(html)
+	#style = ''.join(style)
+	#html = ''.join(html)
 	return (style, html)
 
 #FIXME: remove CSS opacity, since it's inherited by child elements in HTML+CSS
@@ -296,9 +304,13 @@ def plugin_func(image, drawable, css_opacity, export_images=True):
 		#to do later: if layer is text, create a text node
 	
 	d, layers = layers_to_dict(reversed(image.layers), layers_meta)
-	css, inner_html = get_html(None, d, layers, layers_meta, layer_order, css_opacity)
+	css, html = get_html(None, d, layers, layers_meta, layer_order, css_opacity)
 	
-	html = html_body_template % (os.path.relpath(css_file_path, os.path.dirname(html_file_path)), inner_html)
+	html.insert(0, html_body_open_template % os.path.relpath(css_file_path, os.path.dirname(html_file_path)))
+	html.append(html_body_close_template)
+	
+	css = string.join(css)
+	html = string.join(html)
 	
 	gimp.progress_init('psd2html: Saving %s' % html_file_path)
 	os.write(html_file, html)
