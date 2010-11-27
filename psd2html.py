@@ -20,6 +20,9 @@
 from gimpfu import *
 import os
 import re
+import logging
+
+logger = logging.getLogger(__name__)
 
 gettext.install("gimp20-python", gimp.locale_directory, unicode=True)
 
@@ -92,28 +95,28 @@ def set_step_size(s):
 	step_size = s
 
 def sort(d, layers, layers_meta):
-	#print 'dict: %s' % str(d)
+	#logger.debug('dict: %s' % str(d))
 	for key in d.keys():
 		#verify this key still exists since the dict can be chaged within this loop
 		if not d.has_key(key):
 			continue
 		val = d[key]
-		#print 'key: %s, val: %s' % (key, str(val))
+		#logger.debug('key: %s, val: %s' % (key, str(val)))
 		for key2 in d.keys():
 			if not d.has_key(key):
 				continue
 			val2 = d[key2]
 			#if they're the same size, they can't be parents or siblings
-			#print key+', '+key2
-			#print layers[key]
+			#logger.debug(key+', '+key2)
+			#logger.debug(layers[key])
 			if layers[key].width == layers[key2].width and layers[key].height == layers[key2].height:
 				continue
 			#if key2 is smaller, it might be a child
 			elif (layers[key].width >= layers[key2].width) and (layers[key].height >= layers[key2].height):
 				#if key2 is within the bounds of key
 				if (layers_meta[key]['x'] <= layers_meta[key2]['x'] or layers_meta[key]['x2'] >= layers_meta[key2]['x2']) and (layers_meta[key]['y'] <= layers_meta[key2]['y'] or layers_meta[key]['y2'] >= layers_meta[key2]['y2']):
-					#print 'layer: %s, x: %d, y: %d, x2: %d, y2: %d' % (key, layers_meta[key]['x'], layers_meta[key]['y'], layers_meta[key]['x2'], layers_meta[key]['y2'])
-					#print 'layer2: %s, x: %d, y: %d, x2: %d, y2: %d' % (key2, layers_meta[key2]['x'], layers_meta[key2]['y'], layers_meta[key2]['x2'], layers_meta[key2]['y2'])
+					#logger.debug('layer: %s, x: %d, y: %d, x2: %d, y2: %d' % (key, layers_meta[key]['x'], layers_meta[key]['y'], layers_meta[key]['x2'], layers_meta[key]['y2']))
+					#logger.debug('layer2: %s, x: %d, y: %d, x2: %d, y2: %d' % (key2, layers_meta[key2]['x'], layers_meta[key2]['y'], layers_meta[key2]['x2'], layers_meta[key2]['y2']))
 					d[key][key2] = d.pop(key2)
 			#otherwise, key2 is a parent of key, in which case it'll be sorted in another iteration
 	
@@ -122,11 +125,11 @@ def sort(d, layers, layers_meta):
 	return d
 
 def layers_to_dict(layers, layers_meta):
-	print 'layers_to_dict()'
+	logger.debug('layers_to_dict()')
 	d = {}
 	l = {}
 	for layer in layers:
-		print layer.name
+		logger.debug(layer.name)
 		d[layer.name] = {}
 		l[layer.name] = layer
 	d = sort(d, l, layers_meta)
@@ -257,7 +260,7 @@ def plugin_func(image, drawable, css_opacity):
 			layers_meta[layer.name]['id'] = str(layer.ID)
 		
 		#for debugging
-		print layers_meta[layer.name]['id']
+		logger.debug(layers_meta[layer.name]['id'])
 		image_ext = 'png'
 		image_path = os.path.join(directory, media_dir, layers_meta[layer.name]['id']+os.path.extsep+image_ext)
 		#the path relative from the css file
