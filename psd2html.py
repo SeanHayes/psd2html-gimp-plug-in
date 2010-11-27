@@ -100,13 +100,14 @@ def set_step_size(s):
 
 def get_sort_keys_func(layers_meta):
 	def sort_keys(key):
-		logger.debug(key)
-		logger.debug(layers_meta[key])
+		#logger.debug(key)
+		#logger.debug(layers_meta[key])
 		return layers_meta[key]['z-index']
 	return sort_keys
 
 def sort(d, layers, layers_meta):
-	#logger.debug('dict: %s' % str(d))
+	logger.debug('sort()')
+	logger.debug('dict: %s' % str(d))
 	sort_keys_func = get_sort_keys_func(layers_meta)
 	d_keys = d.keys()
 	d_keys.sort(key=sort_keys_func)
@@ -118,7 +119,7 @@ def sort(d, layers, layers_meta):
 		val = d[key]
 		#logger.debug('key: %s, val: %s' % (key, str(val)))
 		for key2 in d_keys:
-			if not d.has_key(key):
+			if not d.has_key(key2):
 				continue
 			val2 = d[key2]
 			
@@ -141,7 +142,7 @@ def sort(d, layers, layers_meta):
 			#otherwise, key2 is a parent of key, in which case it'll be sorted in another iteration
 	
 	for key in d:
-		d[key] = sort(d[key], layers, layers_meta)
+		d[key] = sort(d[key], layers, layers_meta) if d[key] else {}
 	return d
 
 def layers_to_dict(layers, layers_meta):
@@ -218,7 +219,7 @@ def get_html(parent_key, d, layers, layers_meta, layer_order, css_opacity, depth
 	return (style, html)
 
 #FIXME: remove CSS opacity, since it's inherited by child elements in HTML+CSS
-def plugin_func(image, drawable, css_opacity):
+def plugin_func(image, drawable, css_opacity, export_images=True):
 	"""
 	This is the function that does most of the work. See register() below for more info.
 	
@@ -236,6 +237,9 @@ def plugin_func(image, drawable, css_opacity):
 	
 	When testing in the console, call this function with:
 	plugin_func(gimp.image_list()[0], gimp.image_list()[0], True)
+	OR
+	plugin_func(gimp.image_list()[0], gimp.image_list()[0], True, export_images=False)
+	to avoid writing images.
 	"""
 	#step used for progress bar. 1 for html file, 1 for css file, 3 for each layer
 	set_step_size(1 / (2 + 3 * len(image.layers)))
@@ -279,8 +283,7 @@ def plugin_func(image, drawable, css_opacity):
 		if layers_meta[layer.name]['id'] is '':
 			layers_meta[layer.name]['id'] = str(layer.ID)
 		
-		#for debugging
-		logger.debug(layers_meta[layer.name]['id'])
+		#logger.debug(layers_meta[layer.name]['id'])
 		image_ext = 'png'
 		image_path = os.path.join(directory, media_dir, layers_meta[layer.name]['id']+os.path.extsep+image_ext)
 		#the path relative from the css file
@@ -288,7 +291,8 @@ def plugin_func(image, drawable, css_opacity):
 		#if layer is an image extract it to filename_files/
 		add_progress(1)
 		gimp.progress_init('psd2html: Saving %s' % image_path)
-		#FIXME:pdb.gimp_file_save(image, layer, image_path, image_path, run_mode=1)
+		if export_images:
+			pdb.gimp_file_save(image, layer, image_path, image_path, run_mode=1)
 		add_progress(2)
 		#to do later: if layer is text, create a text node
 	
