@@ -23,6 +23,10 @@ import re
 import logging
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+handler = logging.StreamHandler()
+handler.setLevel(logging.DEBUG)
+logger.addHandler(handler)
 
 gettext.install("gimp20-python", gimp.locale_directory, unicode=True)
 
@@ -94,29 +98,45 @@ def set_step_size(s):
 	global step_size
 	step_size = s
 
+def get_sort_keys_func(layers_meta):
+	def sort_keys(key):
+		logger.debug(key)
+		logger.debug(layers_meta[key])
+		return layers_meta[key]['z-index']
+	return sort_keys
+
 def sort(d, layers, layers_meta):
 	#logger.debug('dict: %s' % str(d))
-	for key in d.keys():
+	sort_keys_func = get_sort_keys_func(layers_meta)
+	d_keys = d.keys()
+	d_keys.sort(key=sort_keys_func)
+	logger.debug(d_keys)
+	for key in d_keys:
 		#verify this key still exists since the dict can be chaged within this loop
 		if not d.has_key(key):
 			continue
 		val = d[key]
 		#logger.debug('key: %s, val: %s' % (key, str(val)))
-		for key2 in d.keys():
+		for key2 in d_keys:
 			if not d.has_key(key):
 				continue
 			val2 = d[key2]
-			#if they're the same size, they can't be parents or siblings
+			
+			lk = layers[key]
+			lk2 = layers[key2]
 			#logger.debug(key+', '+key2)
-			#logger.debug(layers[key])
-			if layers[key].width == layers[key2].width and layers[key].height == layers[key2].height:
+			#logger.debug(lk)
+			#if they're the same size, they can't be parents or siblings
+			if lk.width == lk2.width and lk.height == lk2.height:
 				continue
 			#if key2 is smaller, it might be a child
-			elif (layers[key].width >= layers[key2].width) and (layers[key].height >= layers[key2].height):
+			elif (lk.width >= lk2.width) and (lk.height >= lk2.height):
+				lmk = layers_meta[key]
+				lmk2 = layers_meta[key2]
 				#if key2 is within the bounds of key
-				if (layers_meta[key]['x'] <= layers_meta[key2]['x'] or layers_meta[key]['x2'] >= layers_meta[key2]['x2']) and (layers_meta[key]['y'] <= layers_meta[key2]['y'] or layers_meta[key]['y2'] >= layers_meta[key2]['y2']):
-					#logger.debug('layer: %s, x: %d, y: %d, x2: %d, y2: %d' % (key, layers_meta[key]['x'], layers_meta[key]['y'], layers_meta[key]['x2'], layers_meta[key]['y2']))
-					#logger.debug('layer2: %s, x: %d, y: %d, x2: %d, y2: %d' % (key2, layers_meta[key2]['x'], layers_meta[key2]['y'], layers_meta[key2]['x2'], layers_meta[key2]['y2']))
+				if (lmk['x'] <= lmk2['x'] or lmk['x2'] >= lmk2['x2']) and (lmk['y'] <= lmk2['y'] or lmk['y2'] >= lmk2['y2']):
+					#logger.debug('layer: %s, x: %d, y: %d, x2: %d, y2: %d' % (key, lmk['x'], lmk['y'], lmk['x2'], lmk['y2']))
+					#logger.debug('layer2: %s, x: %d, y: %d, x2: %d, y2: %d' % (key2, lmk2['x'], lmk2['y'], lmk2['x2'], lmk2['y2']))
 					d[key][key2] = d.pop(key2)
 			#otherwise, key2 is a parent of key, in which case it'll be sorted in another iteration
 	
@@ -268,7 +288,7 @@ def plugin_func(image, drawable, css_opacity):
 		#if layer is an image extract it to filename_files/
 		add_progress(1)
 		gimp.progress_init('psd2html: Saving %s' % image_path)
-		pdb.gimp_file_save(image, layer, image_path, image_path, run_mode=1)
+		#FIXME:pdb.gimp_file_save(image, layer, image_path, image_path, run_mode=1)
 		add_progress(2)
 		#to do later: if layer is text, create a text node
 	
