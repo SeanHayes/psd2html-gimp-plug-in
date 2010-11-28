@@ -90,6 +90,9 @@ html_body_close_template = """
 </html>
 """
 
+html_file_path_template = '%s%shtml'
+css_file_path_template = 'style%scss'
+media_dir_template = '%s_files'
 image_filename_template = '%s%spng'
 
 step_size = 1
@@ -201,6 +204,7 @@ def get_html(parent_key, d, layers, layers_meta, layer_order, css_opacity, depth
 			vals['color'] = '#%s%s%s' % tuple(color[0:3])
 			vals['text-align'] = justifications[pdb.gimp_text_layer_get_justification(layers[key])]
 			vals['text-indent'] = '%dpx' % pdb.gimp_text_layer_get_indent(layers[key])
+			#FIXME: line height doesn't translate well into CSS
 			vals['line-height'] = '%dpx' % pdb.gimp_text_layer_get_line_spacing(layers[key])
 			vals['letter-spacing'] = '%dpx' % pdb.gimp_text_layer_get_letter_spacing(layers[key])
 			s = css_text_template
@@ -221,7 +225,7 @@ def get_html(parent_key, d, layers, layers_meta, layer_order, css_opacity, depth
 	return (style, html)
 
 #FIXME: remove CSS opacity, since it's inherited by child elements in HTML+CSS
-def plugin_func(image, drawable, css_opacity, export_images=True):
+def plugin_func(image, drawable, css_opacity, extract_text_images, export_images=True):
 	"""
 	This is the function that does most of the work. See register() below for more info.
 	
@@ -238,9 +242,9 @@ def plugin_func(image, drawable, css_opacity, export_images=True):
 	/home/user/dev/template_files/<layer_name_n...>.(gif|jpg|png)
 	
 	When testing in the console, call this function with:
-	plugin_func(gimp.image_list()[0], gimp.image_list()[0], True)
+plugin_func(gimp.image_list()[0], gimp.image_list()[0], True, False)
 	OR
-	plugin_func(gimp.image_list()[0], gimp.image_list()[0], True, export_images=False)
+plugin_func(gimp.image_list()[0], gimp.image_list()[0], True, False, export_images=False)
 	to avoid writing images.
 	"""
 	#step used for progress bar. 1 for html file, 1 for css file, 3 for each layer
@@ -253,12 +257,12 @@ def plugin_func(image, drawable, css_opacity, export_images=True):
 	directory = os.path.dirname(image.filename)
 	#TODO: clean up existing files and folders in case this plugin has already been run (accept overwrite parameter from user, or fail)
 	#create filename.html and filename_files/ folder
-	html_file_path = os.path.join(directory, filename+os.path.extsep+'html')
+	html_file_path = os.path.join(directory, html_file_path_template % (filename, os.path.extsep))
 	html_file = os.open(html_file_path, os.O_WRONLY|os.O_CREAT|os.O_TRUNC)
-	media_dir = filename+'_files'
+	media_dir = media_dir_template % filename
 	if not os.path.exists(media_dir):
 		os.mkdir(media_dir)
-	css_file_path = os.path.join(directory, media_dir, 'style'+os.path.extsep+'css')
+	css_file_path = os.path.join(directory, media_dir, css_file_path_template % os.path.extsep)
 	css_file = os.open(css_file_path, os.O_WRONLY|os.O_CREAT|os.O_TRUNC)
 	
 	disallowed_chars = re.compile(r'[^\w-]+')
@@ -287,8 +291,10 @@ def plugin_func(image, drawable, css_opacity, export_images=True):
 		
 		#logger.debug(layers_meta[layer.name]['id'])
 		
-		if not pdb.gimp_drawable_is_text_layer(layer):
+		if not pdb.gimp_drawable_is_text_layer(layer) or extract_text_images:
+			logger.debug('extracting: %s' % layer.name)
 			image_path = os.path.join(directory, media_dir, image_filename_template % (layers_meta[layer.name]['id'], os.path.extsep))
+			logger.debug('path: %s' % image_path)
 			#the path relative from the css file
 			layers_meta[layer.name]['image_rel_path'] = os.path.relpath(image_path, os.path.dirname(css_file_path))
 			#if layer is an image extract it to filename_files/
@@ -339,6 +345,7 @@ register(
 		(PF_IMAGE, "image", "Input image", None),
 		(PF_DRAWABLE, "drawable", "Input drawable", None),
 		(PF_TOGGLE, "css-opacity", "Whether to use CSS to specify opacity (1, True) or save it in the image file (0, False).", True),
+		(PF_TOGGLE, "extract-text-images", "Extract images for text layers. Off by default, but you may want to turn this on if you have text in a special font that users aren't likely to have.", False),
 		#TODO: add option for interactive file saving, and another for css defined opacity
 		#to do later: add options for manually choosing CSS and JS to use, could be useful for compatibility with CSS and JS frameworks
 	],
