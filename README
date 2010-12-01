@@ -24,6 +24,11 @@ On Linux, copy psd2html.py to one of the following directories:
 Make sure psd2html.py is executable.
 If GIMP is currently running, it will need to be restarted.
 
+== Usage ==
+Open up a PSD file using GIMP.
+On the image window, go to Filters > Web > Convert to HTML.
+Choose your options and click OK.
+
 == Feedback ==
 Bug reports and feature requests can be left at the Issues Tracker on GitHub: https://github.com/SeanHayes/psd2html-gimp-plug-in/issues
 
