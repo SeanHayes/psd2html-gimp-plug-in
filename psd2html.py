@@ -29,7 +29,8 @@ handler = logging.StreamHandler()
 handler.setLevel(logging.DEBUG)
 logger.addHandler(handler)
 
-gettext.install("gimp20-python", gimp.locale_directory, unicode=True)
+gettext_domain = "gimp20-python"
+gettext.install(gettext_domain, gimp.locale_directory, unicode=True)
 
 justifications = ('left', 'right', 'center', 'justify')
 
@@ -37,6 +38,7 @@ opacity_template = """
 	opacity: %.1f;
 	filter: alpha(opacity=%i);"""
 
+#TODO: add relative positioning option
 css_image_template = """#%(id)s
 {
 	background-image: url("%(url)s");
@@ -334,26 +336,26 @@ plugin_func(gimp.image_list()[0], gimp.image_list()[0], True, False, export_imag
 
 register(
 	"psd2html",
-	_("Converts a .psd file (or other layered image) to an .html template."),
-	_("This is a Python plug-in for the GIMP that will extract images and text out of a .psd file (or other layered image) and create an .html template from it. I don't think this plugin will ever fully replace a human coder, but it should be able to do 50-90% of the work."),
+	N_("Converts a .psd file (or other layered image) to an .html template."),
+	N_("This is a Python plug-in for the GIMP that will extract images and text out of a .psd file (or other layered image) and create an .html template from it. I don't think this plugin will ever fully replace a human coder, but it should be able to do 50-90% of the work."),
 	"Seán Hayes",
 	"Seán Hayes",
 	"2010",
 	N_("_Convert to HTML..."),
 	"*",
 	[
-		(PF_IMAGE, "image", "Input image", None),
-		(PF_DRAWABLE, "drawable", "Input drawable", None),
-		(PF_TOGGLE, "css-opacity", "Whether to use CSS to specify opacity (1, True) or save it in the image file (0, False).", True),
-		(PF_TOGGLE, "extract-text-images", "Extract images for text layers. Off by default, but you may want to turn this on if you have text in a special font that users aren't likely to have.", False),
-		#TODO: add option for interactive file saving, and another for css defined opacity
+		(PF_IMAGE, "image", _("Input image"), None),
+		(PF_DRAWABLE, "drawable", _("Input drawable"), None),
+		(PF_TOGGLE, "css-opacity", _("Whether to use CSS to specify opacity (1, True) or save it in the image file (0, False)."), True),
+		(PF_TOGGLE, "extract-text-images", _("Extract images for text layers. Off by default, but you may want to turn this on if you have text in a special font that users aren't likely to have."), False),
+		#TODO: add option for interactive file saving
 		#to do later: add options for manually choosing CSS and JS to use, could be useful for compatibility with CSS and JS frameworks
 	],
 	[],
 	plugin_func,
 	menu="<Image>/Filters/Web",
-	domain=("gimp20-python", gimp.locale_directory),
-	)
+	domain=(gettext_domain, gimp.locale_directory),
+)
 
 main()
 

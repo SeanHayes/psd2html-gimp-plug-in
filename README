@@ -2,6 +2,18 @@
 
 This is a Python plug-in for the GIMP that will extract images and text out of a .psd file (or other layered formats) and create an .html template from it. I don't think this plugin will ever fully replace a human coder, but it should be able to do 50-90% of the work.
 
+== Important URLs ==
+Project Repository:
+	https://github.com/SeanHayes/psd2html-gimp-plug-in
+Download Page:
+	https://github.com/SeanHayes/psd2html-gimp-plug-in/archives/master
+GIMP Plugin Registry Page:
+	http://registry.gimp.org/node/24767
+
+== Download ==
+Go to: https://github.com/SeanHayes/psd2html-gimp-plug-in/archives/master
+Right Click on psd2html.py and save to your computer.
+
 == Installation ==
 This plugin has only been tested on Linux, but in theory it should work on Windows as well. If not let me know.
 
