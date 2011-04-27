@@ -14,14 +14,26 @@ GIMP Plugin Registry Page:
 Go to: https://github.com/SeanHayes/psd2html-gimp-plug-in/archives/master
 Right Click on psd2html.py and save to your computer.
 
-== Installation ==
-This plugin has only been tested on Linux, but in theory it should work on Windows as well. If not let me know.
+== Supported Platforms ==
+This plugin has been confirmed to work on:
+Ubuntu 10.10 x64
+Windows XP SP 3
 
+It should work cross platform, file a bug report if you can't get it working.
+
+NOTE: If you're a Windows user there's a good chance you have Python 2.5, and this plug-in requires Python 2.6, which can be downloaded here: http://www.python.org/download/releases/2.6.6/. Also, I've heard GIMP doesn't currently work with Python 2.7, and definitely doesn't work with Python 3.0, so for now make sure you have Python 2.6.
+
+== Installation ==
 On Linux, copy psd2html.py to one of the following directories:
-~/.gimp-2.6/plug-ins/ (just for your user)
+~/.gimp-<GIMP version>/plug-ins/ (just for your user)
 /usr/lib/gimp/2.0/plug-ins (system wide)
 
 Make sure psd2html.py is executable.
+
+On Windows, copy psd2html.py to one of the following directories:
+C:\Documents and Settings\<user>\.gimp-<GIMP version>\plug-ins
+C:\Programmi\gimp-<GIMP version>\lib\gimp\2.0\plug-ins\
+
 If GIMP is currently running, it will need to be restarted.
 
 == Usage ==
