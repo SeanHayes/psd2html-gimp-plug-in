@@ -26,13 +26,13 @@ NOTE: If you're a Windows user there's a good chance you have Python 2.5, and th
 == Installation ==
 On Linux, copy psd2html.py to one of the following directories:
 ~/.gimp-<GIMP version>/plug-ins/ (just for your user)
-/usr/lib/gimp/2.0/plug-ins (system wide)
+/usr/lib/gimp/<GIMP version>/plug-ins (system wide)
 
 Make sure psd2html.py is executable.
 
 On Windows, copy psd2html.py to one of the following directories:
 C:\Documents and Settings\<user>\.gimp-<GIMP version>\plug-ins
-C:\Programmi\gimp-<GIMP version>\lib\gimp\2.0\plug-ins\
+C:\Program Files\GIMP-<GIMP version>\lib\gimp\2.0\plug-ins\
 
 If GIMP is currently running, it will need to be restarted.
 
