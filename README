@@ -24,17 +24,31 @@ It should work cross platform, file a bug report if you can't get it working.
 NOTE: If you're a Windows user there's a good chance you have Python 2.5, and this plug-in requires Python 2.6, which can be downloaded here: http://www.python.org/download/releases/2.6.6/. Also, I've heard GIMP doesn't currently work with Python 2.7, and definitely doesn't work with Python 3.0, so for now make sure you have Python 2.6.
 
 == Installation ==
+Before installing the script, you will need:
+Python 2.6
+PyGTK+
+GIMP 2.6
+
+Python and PyGTK+ will need to be installed before GIMP in order for GIMP to recognize that it can use Python plug-ins and install the necessary components. If GIMP is installed before Python and PyGTK+, it may need to be reinstalled.
+
+If GIMP is currently running, it will need to be restarted after installation.
+
+=== Linux ===
 On Linux, copy psd2html.py to one of the following directories:
 ~/.gimp-<GIMP version>/plug-ins/ (just for your user)
 /usr/lib/gimp/<GIMP version>/plug-ins (system wide)
 
 Make sure psd2html.py is executable.
 
-On Windows, copy psd2html.py to one of the following directories:
-C:\Documents and Settings\<user>\.gimp-<GIMP version>\plug-ins
-C:\Program Files\GIMP-<GIMP version>\lib\gimp\2.0\plug-ins\
+=== Windows ===
+Here are download locations for the dependencies:
+http://www.python.org/download/releases/2.6/ (Choose "Windows x86 MSI Installer (2.6)")
+http://ftp.gnome.org/pub/GNOME/binaries/win32/pygtk/2.24/ (Choose "pygtk-all-in-one-2.24.0.win32-py2.6.msi")
+http://gimp-win.sourceforge.net/stable.html (Choose "GIMP for Windows (version 2.6.11)")
 
-If GIMP is currently running, it will need to be restarted.
+On Windows, copy psd2html.py to one of the following directories:
+C:\Documents and Settings\<user>\.gimp-<GIMP version>\plug-ins (just for your user)
+C:\Program Files\GIMP-<GIMP version>\lib\gimp\2.0\plug-ins\ (system wide)
 
 == Usage ==
 Open up a PSD file using GIMP.
