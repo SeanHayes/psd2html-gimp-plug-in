@@ -42,7 +42,7 @@ Make sure psd2html.py is executable.
 
 === Windows ===
 Here are download locations for the dependencies:
-http://www.python.org/download/releases/2.6/ (Choose "Windows x86 MSI Installer (2.6)")
+http://www.python.org/download/releases/2.6.6/ (Choose "Windows x86 MSI Installer (2.6.6)")
 http://ftp.gnome.org/pub/GNOME/binaries/win32/pygtk/2.24/ (Choose "pygtk-all-in-one-2.24.0.win32-py2.6.msi")
 http://gimp-win.sourceforge.net/stable.html (Choose "GIMP for Windows (version 2.6.11)")
 
